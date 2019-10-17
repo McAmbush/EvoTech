@@ -6,8 +6,8 @@ from code import process
 up = 'up/'
 down = 'down/'
 
-app = Flask(__name__,template_folder = 'template/dist/')
-app.static_folder = 'template/dist/'
+app = Flask(__name__,template_folder = 'static/')
+app.static_folder = 'static/'
 
 @app.route('/')
 def feed():
