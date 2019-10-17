@@ -14,6 +14,8 @@ def process(path,down):
     Namelist = []
     FNamelist = []
     Vidlist = []
+    Age = []
+    Sex = []
     Name = []
     FName = []
     Vid = []
@@ -36,7 +38,7 @@ def process(path,down):
     print(out)
     print(file_len)
     file = fitz.open(path)
-    for p in range(2,file_len-1):
+    for p in range(2,file_len):
         print('Processing Page %d ....'%p)
         start = time.time()
         page = file.loadPage(p)
@@ -64,6 +66,8 @@ def process(path,down):
             im2.append(cv2.resize(i[:,50:410],(800,350)))
             im2.append(cv2.resize(i[:,420:800],(800,350)))
             im2.append(cv2.resize(i[:,800:1170],(800,350)))
+    #     for i in im:
+    #         im2.append(cv2.resize(i,(880,350)))
         Vids = []
         FName = []
         Name = []
@@ -71,6 +75,8 @@ def process(path,down):
             v = 0
             n = 0
             f = 0
+            ag = 0
+            sx = 0
             img = j[:100,445:]
             vid = pytesseract.image_to_string(img)
             vid = vid.split(sep = '\n')
@@ -78,7 +84,7 @@ def process(path,down):
                 if len(re.findall('[A-Z]',r))>1 and len(re.findall('[0-9]',r))>5:
                     Vids.append(r)
                     v+=1
-            text = pytesseract.image_to_string(j)
+            text = pytesseract.image_to_string(j,config = '--psm 11')
             text = text.split(sep = '\n')
             while '' in text:
                 text.remove('')
@@ -113,14 +119,42 @@ def process(path,down):
                         Name.append(a.split(sep = ':')[1:][0])
                     except IndexError:
                         Name.append(a)
+                elif 'Age' in text[z]:
+                    Age.append(''.join(re.findall('[0-9]',text[z])))
+                    ag+=1
+                if re.search('Sex',text[z]):
+                    Sex.append((text[z].split(sep = 'Sex')[-1]).split(sep = ':')[-1])
+                    sx+=1
             if n==0:
                 Name.append('deleted')
             if v==0:
                 Vids.append('deleted')
             if f==0:
                 FName.append('deleted')
+            if ag==0:
+                Age.append(0)
+            if sx==0:
+                Sex.append('deleted')
+    #         text = pytesseract.image_to_string(j)
+    #         text = text.split(sep = '\n')
+    #         while '' in text:
+    #             text.remove('')
+    #         for z in range(len(text)):
+    #             if text[z].startswith('Name'):
+    #                 a = text[z]
+    #                 a = a.split(sep = 'Photo')[0]
+    #                 a = a.split(sep = 'House')[0]
+    #                 a = a.split(sep = 'Avail')[0]
+    #                 try:
+    #                     Name.append(a.split(sep = ':')[1:][0])
+    #                 except IndexError:
+    #                     Name.append(a)
         try:
             assert len(Name)==len(FName)==len(Vids)
+    #         for (g,h,k) in zip(Name,FName,Vids):
+    #             Vidlist.append(k)
+    #             Namelist.append(h)
+    #             FNamelist.append(g)
             Namelist.extend(Name)
             FNamelist.extend(FName)
             Vidlist.extend(Vids)
@@ -131,6 +165,8 @@ def process(path,down):
     df["Name"] = Namelist
     df['Relation'] = FNamelist
     df['Vid'] = Vidlist
+    df['Age'] = Age
+    df['Gender'] = Sex
     save = '/'.join(bufpath)
     save = save + '/outfile.csv'
     df.to_csv(os.path.join(down,'output.csv'))
